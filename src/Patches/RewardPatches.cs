@@ -6,6 +6,7 @@ using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
 using Godot;
+using HandAndBrain.UI;
 using HarmonyLib;
 using MegaCrit.Sts2.Core.Commands;
 using MegaCrit.Sts2.Core.Context;
@@ -33,20 +34,45 @@ using MegaCrit.Sts2.Core.Runs.History;
 
 namespace HandAndBrain.Patches;
 
+/// <summary>A card reward that sits in its chooser's rewards set but belongs to its recipient.</summary>
+public sealed class RedirectedReward
+{
+	public required CardReward Reward { get; init; }
+
+	public required Player Chooser { get; init; }
+
+	public required AbstractRoom Room { get; init; }
+
+	public Player Recipient => Reward.Player;
+
+	/// <summary>True while the chooser has the card reward screen open (simulated on every peer).</summary>
+	public bool IsBeingChosen { get; set; }
+
+	public List<CardModel> Picked { get; } = new List<CardModel>();
+
+	public bool Skipped { get; set; }
+
+	/// <summary>The skip notification is only shown the first time the chooser skips.</summary>
+	public bool SkipAnnounced { get; set; }
+}
+
 /// <summary>Tracks which card rewards have been handed to another player to choose.</summary>
 public static class Redirects
 {
-	private static readonly ConditionalWeakTable<Reward, Player> _chooserByReward = new ConditionalWeakTable<Reward, Player>();
+	private static readonly ConditionalWeakTable<Reward, RedirectedReward> _byReward = new ConditionalWeakTable<Reward, RedirectedReward>();
 
-	public static void Register(Reward reward, Player chooser)
+	/// <summary>The rewards redirected after the most recent combat.</summary>
+	public static List<RedirectedReward> Current { get; private set; } = new List<RedirectedReward>();
+
+	public static RedirectedReward? Get(Reward reward)
 	{
-		_chooserByReward.AddOrUpdate(reward, chooser);
+		return _byReward.TryGetValue(reward, out RedirectedReward? redirected) ? redirected : null;
 	}
 
 	/// <summary>The player choosing this reward on the recipient's behalf, or null for a normal reward.</summary>
 	public static Player? ChooserOf(Reward reward)
 	{
-		return _chooserByReward.TryGetValue(reward, out Player? chooser) ? chooser : null;
+		return Get(reward)?.Chooser;
 	}
 
 	public static string NameOf(Player player)
@@ -58,8 +84,9 @@ public static class Redirects
 	/// Moves each player's end-of-combat card rewards into the rewards set of the player who
 	/// chooses for them. Runs identically on every peer, so the result is deterministic.
 	/// </summary>
-	public static void RedirectCardRewards(IReadOnlyList<RewardsSet> sets)
+	public static void RedirectCardRewards(IReadOnlyList<RewardsSet> sets, AbstractRoom room)
 	{
+		Current = new List<RedirectedReward>();
 		HandAndBrainSettings? settings = HandAndBrainState.Active;
 		if (settings == null || !settings.IsInEffect)
 		{
@@ -88,7 +115,14 @@ public static class Redirects
 		{
 			from.Rewards.Remove(reward);
 			to.Rewards.Add(reward);
-			Register(reward, to.Player);
+			RedirectedReward redirected = new RedirectedReward
+			{
+				Reward = reward,
+				Chooser = to.Player,
+				Room = room
+			};
+			_byReward.AddOrUpdate(reward, redirected);
+			Current.Add(redirected);
 			Log.Info($"[HandAndBrain] Player {to.Player.NetId} will choose the card reward of player {from.Player.NetId}");
 		}
 		foreach (RewardsSet set in moves.Select((m) => m.to).Distinct())
@@ -121,7 +155,7 @@ public static class OfferRoomEndRewardsPatch
 		{
 			sets.Add(await RewardsCmd.GenerateForRoomEnd(player, room));
 		}
-		Redirects.RedirectCardRewards(sets);
+		Redirects.RedirectCardRewards(sets, room);
 		foreach (RewardsSet set in sets)
 		{
 			await Hook.BeforeCombatRewardOffered(set, room.CombatState.RunState, room);
@@ -208,8 +242,28 @@ public static class CardRewardOnSelectPatch
 		{
 			return true;
 		}
-		__result = OnSelectForRecipient(__instance, chooser);
+		__result = TrackSelection(__instance, chooser);
 		return false;
+	}
+
+	private static async Task<bool> TrackSelection(CardReward reward, Player chooser)
+	{
+		RedirectedReward? redirected = Redirects.Get(reward);
+		if (redirected != null)
+		{
+			redirected.IsBeingChosen = true;
+		}
+		try
+		{
+			return await OnSelectForRecipient(reward, chooser);
+		}
+		finally
+		{
+			if (redirected != null)
+			{
+				redirected.IsBeingChosen = false;
+			}
+		}
 	}
 
 	// Mirrors CardReward.OnSelect, with the chooser driving the UI and the network choice.
@@ -298,10 +352,25 @@ public static class CardRewardOnSelectPatch
 						((Node)(object)cardHolder).QueueFreeSafely();
 					}
 					Log.Info($"[HandAndBrain] Player {chooser.NetId} chose {added.Id} for player {recipient.NetId}");
+					Redirects.Get(reward)?.Picked.Add(added);
+					PickNotifications.CardChosen(result, obtainedCard, chooser);
 				}
 			}
 			else if (alternative != null)
 			{
+				if (alternative.AfterSelected == PostAlternateCardRewardAction.EndSelectionAndDoNotCompleteReward)
+				{
+					RedirectedReward? redirected = Redirects.Get(reward);
+					if (redirected != null)
+					{
+						redirected.Skipped = true;
+						if (!redirected.SkipAnnounced)
+						{
+							redirected.SkipAnnounced = true;
+							PickNotifications.RewardSkipped(redirected);
+						}
+					}
+				}
 				await alternative.OnSelect();
 			}
 		}

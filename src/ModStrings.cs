@@ -21,13 +21,28 @@ public static class ModStrings
 
 	public const string ShowCards = "HAND_AND_BRAIN.SHOW_CARDS";
 
+	public const string PreviewWaiting = "HAND_AND_BRAIN.PREVIEW_WAITING";
+
+	public const string PreviewChoosing = "HAND_AND_BRAIN.PREVIEW_CHOOSING";
+
+	public const string PreviewHiddenCards = "HAND_AND_BRAIN.PREVIEW_HIDDEN_CARDS";
+
+	public const string PreviewSkipped = "HAND_AND_BRAIN.PREVIEW_SKIPPED";
+
+	public const string ChosenBy = "HAND_AND_BRAIN.CHOSEN_BY";
+
 	private static readonly Dictionary<string, string> _english = new Dictionary<string, string>
 	{
 		[RewardDescription] = "Choose a card for {Player}",
 		[ChooseCardHeader] = "Choose a Card for {Player}",
 		[ViewDeck] = "{Player}'s Deck",
 		[HideCards] = "Hide from {Player}",
-		[ShowCards] = "Show to {Player}"
+		[ShowCards] = "Show to {Player}",
+		[PreviewWaiting] = "{Player} will choose a card for you",
+		[PreviewChoosing] = "{Player} is choosing for you from:",
+		[PreviewHiddenCards] = "(Hidden)",
+		[PreviewSkipped] = "{Player} skipped your card reward",
+		[ChosenBy] = "Chosen by {Player}"
 	};
 
 	/// <summary>The formatted string with {Player} filled in.</summary>
