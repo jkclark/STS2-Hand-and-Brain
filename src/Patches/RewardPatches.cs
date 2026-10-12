@@ -157,6 +157,8 @@ public static class SelectLocalRewardPatch
 		{
 			return true;
 		}
+		// Sent ahead of the selection so the recipient never sees cards the chooser wants hidden.
+		RunSync.BroadcastHideFromRecipient();
 		__result = SelectRedirectedReward(__instance, localPlayer, reward);
 		return false;
 	}

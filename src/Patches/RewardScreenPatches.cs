@@ -9,12 +9,14 @@ using MegaCrit.Sts2.Core.Nodes.GodotExtensions;
 using MegaCrit.Sts2.Core.Nodes.Screens;
 using MegaCrit.Sts2.Core.Nodes.Screens.CardSelection;
 using MegaCrit.Sts2.Core.Nodes.Screens.ScreenContext;
+using MegaCrit.Sts2.addons.mega_text;
 
 namespace HandAndBrain.Patches;
 
 /// <summary>
-/// Adds the recipient's name to the card reward screen's banner, and a button (and R hotkey)
-/// that opens the recipient's deck in the regular deck view.
+/// Adds the recipient's name to the card reward screen's banner, a button (and R hotkey) that
+/// opens the recipient's deck in the regular deck view, and a toggle that hides the offered
+/// cards from the recipient.
 /// </summary>
 public static class RewardScreenDecorations
 {
@@ -73,6 +75,23 @@ public static class RewardScreenDecorations
 			}
 		}), 0u);
 
+		// Same idea for the discard pile hotkey.
+		NCardRewardAlternativeButton hideButton = NCardRewardAlternativeButton.Create(HideButtonText(name), (string)MegaInput.viewDiscardPile);
+		((Node)(object)container).AddChildSafely((Node?)(object)hideButton);
+		((GodotObject)hideButton).Connect(NClickableControl.SignalName.Released, Callable.From<NButton>(delegate
+		{
+			if (ActiveScreenContext.Instance.GetCurrentScreen() != screen)
+			{
+				return;
+			}
+			RunSync.SetHideFromRecipient(!RunSync.HideFromRecipient);
+			((Node)(object)hideButton).GetNode<MegaLabel>("Label").SetTextAutoSize(HideButtonText(name));
+		}), 0u);
+	}
+
+	private static string HideButtonText(string recipientName)
+	{
+		return ModStrings.Format(RunSync.HideFromRecipient ? ModStrings.ShowCards : ModStrings.HideCards, recipientName);
 	}
 }
 

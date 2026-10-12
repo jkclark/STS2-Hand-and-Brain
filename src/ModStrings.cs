@@ -17,11 +17,17 @@ public static class ModStrings
 
 	public const string ViewDeck = "HAND_AND_BRAIN.VIEW_DECK";
 
+	public const string HideCards = "HAND_AND_BRAIN.HIDE_CARDS";
+
+	public const string ShowCards = "HAND_AND_BRAIN.SHOW_CARDS";
+
 	private static readonly Dictionary<string, string> _english = new Dictionary<string, string>
 	{
 		[RewardDescription] = "Choose a card for {Player}",
 		[ChooseCardHeader] = "Choose a Card for {Player}",
-		[ViewDeck] = "{Player}'s Deck"
+		[ViewDeck] = "{Player}'s Deck",
+		[HideCards] = "Hide from {Player}",
+		[ShowCards] = "Show to {Player}"
 	};
 
 	/// <summary>The formatted string with {Player} filled in.</summary>

@@ -185,6 +185,11 @@ public static class SetUpNewMultiplayerPatch
 		// Everyone keeps a copy so whoever hosts the reload can restore the pairing.
 		SettingsStore.Save(state.Rng.StringSeed, state.Players.Select((Player p) => p.NetId), HandAndBrainState.Active ?? new HandAndBrainSettings());
 	}
+
+	public static void Postfix()
+	{
+		RunSync.Register(RunManager.Instance.NetService);
+	}
 }
 
 [HarmonyPatch(typeof(RunManager), nameof(RunManager.SetUpSavedMultiplayer))]
@@ -196,6 +201,11 @@ public static class SetUpSavedMultiplayerPatch
 			? HandAndBrainState.Lobby
 			: SettingsStore.Load(state.Rng.StringSeed, state.Players.Select((Player p) => p.NetId));
 		RunActivation.Activate(state, settings);
+	}
+
+	public static void Postfix()
+	{
+		RunSync.Register(RunManager.Instance.NetService);
 	}
 }
 
@@ -219,6 +229,11 @@ public static class SingleplayerSetUpPatch
 [HarmonyPatch(typeof(RunManager), nameof(RunManager.CleanUp))]
 public static class RunCleanUpPatch
 {
+	public static void Prefix()
+	{
+		RunSync.Unregister(RunManager.Instance.NetService);
+	}
+
 	public static void Postfix()
 	{
 		HandAndBrainState.Active = null;
