@@ -4,33 +4,47 @@ using HarmonyLib;
 using MegaCrit.Sts2.Core.ControllerInput;
 using MegaCrit.Sts2.Core.Entities.Players;
 using MegaCrit.Sts2.Core.Helpers;
-using MegaCrit.Sts2.Core.Localization;
 using MegaCrit.Sts2.Core.Nodes.CommonUi;
 using MegaCrit.Sts2.Core.Nodes.GodotExtensions;
 using MegaCrit.Sts2.Core.Nodes.Screens;
 using MegaCrit.Sts2.Core.Nodes.Screens.CardSelection;
+using MegaCrit.Sts2.Core.Nodes.Screens.ScreenContext;
 
 namespace HandAndBrain.Patches;
 
 /// <summary>
-/// Adds the recipient's name to the card reward screen's banner, and a button that opens the
-/// recipient's deck in the regular deck view.
+/// Adds the recipient's name to the card reward screen's banner, and a button (and R hotkey)
+/// that opens the recipient's deck in the regular deck view.
 /// </summary>
 public static class RewardScreenDecorations
 {
+	/// <summary>Input action for the R hotkey; registered in <see cref="ModEntry.Init"/>.</summary>
+	public const string ViewDeckAction = "hand_and_brain_view_recipient_deck";
+
 	private static readonly ConditionalWeakTable<NCardRewardSelectionScreen, Player> _recipients = new ConditionalWeakTable<NCardRewardSelectionScreen, Player>();
 
 	private static readonly AccessTools.FieldRef<NCardRewardSelectionScreen, NCommonBanner> _banner = AccessTools.FieldRefAccess<NCardRewardSelectionScreen, NCommonBanner>("_banner");
 
 	private static readonly AccessTools.FieldRef<NCardRewardSelectionScreen, Control> _rewardAlternativesContainer = AccessTools.FieldRefAccess<NCardRewardSelectionScreen, Control>("_rewardAlternativesContainer");
 
+	public static void RegisterInputActions()
+	{
+		if (InputMap.HasAction(ViewDeckAction))
+		{
+			return;
+		}
+		InputMap.AddAction(ViewDeckAction);
+		InputMap.ActionAddEvent(ViewDeckAction, new InputEventKey
+		{
+			Keycode = Key.R
+		});
+	}
+
 	public static void Decorate(NCardRewardSelectionScreen screen, Player recipient)
 	{
 		_recipients.AddOrUpdate(screen, recipient);
-		LocString header = ModStrings.Get(ModStrings.ChooseCardHeader);
-		header.Add("Player", Redirects.NameOf(recipient));
-		_banner(screen).label.SetTextAutoSize(header.GetFormattedText());
-		AddViewDeckButton(screen, recipient);
+		_banner(screen).label.SetTextAutoSize(ModStrings.Format(ModStrings.ChooseCardHeader, Redirects.NameOf(recipient)));
+		AddButtons(screen, recipient);
 	}
 
 	public static void OnOptionsRefreshed(NCardRewardSelectionScreen screen)
@@ -38,21 +52,27 @@ public static class RewardScreenDecorations
 		// RefreshOptions (e.g. after a reroll) frees every alternative button, including ours.
 		if (_recipients.TryGetValue(screen, out Player? recipient))
 		{
-			AddViewDeckButton(screen, recipient);
+			AddButtons(screen, recipient);
 		}
 	}
 
-	private static void AddViewDeckButton(NCardRewardSelectionScreen screen, Player recipient)
+	private static void AddButtons(NCardRewardSelectionScreen screen, Player recipient)
 	{
-		LocString label = ModStrings.Get(ModStrings.ViewDeck);
-		label.Add("Player", Redirects.NameOf(recipient));
-		// The draw pile hotkey is free outside of combat.
-		NCardRewardAlternativeButton button = NCardRewardAlternativeButton.Create(label.GetFormattedText(), new string[1] { (string)MegaInput.viewDrawPile });
-		((Node)(object)_rewardAlternativesContainer(screen)).AddChildSafely((Node?)(object)button);
-		((GodotObject)button).Connect(NClickableControl.SignalName.Released, Callable.From<NButton>(delegate
+		Control container = _rewardAlternativesContainer(screen);
+		string name = Redirects.NameOf(recipient);
+
+		// The draw pile hotkey is free outside of combat; R is our own action.
+		NCardRewardAlternativeButton deckButton = NCardRewardAlternativeButton.Create(ModStrings.Format(ModStrings.ViewDeck, name), new string[2] { (string)MegaInput.viewDrawPile, ViewDeckAction });
+		((Node)(object)container).AddChildSafely((Node?)(object)deckButton);
+		((GodotObject)deckButton).Connect(NClickableControl.SignalName.Released, Callable.From<NButton>(delegate
 		{
-			NDeckViewScreen.ShowScreen(recipient);
+			// The hotkey stays bound while the deck view is open on top of this screen.
+			if (ActiveScreenContext.Instance.GetCurrentScreen() == screen)
+			{
+				NDeckViewScreen.ShowScreen(recipient);
+			}
 		}), 0u);
+
 	}
 }
 

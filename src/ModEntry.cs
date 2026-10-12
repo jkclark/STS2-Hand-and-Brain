@@ -1,3 +1,4 @@
+using HandAndBrain.Patches;
 using HarmonyLib;
 using MegaCrit.Sts2.Core.Logging;
 using MegaCrit.Sts2.Core.Modding;
@@ -12,6 +13,7 @@ public static class ModEntry
 	public static void Init()
 	{
 		new Harmony("jclark.HandAndBrain").PatchAll(typeof(ModEntry).Assembly);
+		RewardScreenDecorations.RegisterInputActions();
 		Log.Info("[HandAndBrain] Loaded");
 	}
 }

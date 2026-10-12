@@ -24,6 +24,14 @@ public static class ModStrings
 		[ViewDeck] = "{Player}'s Deck"
 	};
 
+	/// <summary>The formatted string with {Player} filled in.</summary>
+	public static string Format(string key, string playerName)
+	{
+		LocString text = Get(key);
+		text.Add("Player", playerName);
+		return text.GetFormattedText();
+	}
+
 	public static LocString Get(string key)
 	{
 		EnsureMerged();
