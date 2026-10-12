@@ -1,0 +1,56 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net9.0</TargetFramework>
+    <AssemblyName>HandAndBrain</AssemblyName>
+    <RootNamespace>HandAndBrain</RootNamespace>
+    <Version>0.1.0</Version>
+    <Nullable>enable</Nullable>
+    <LangVersion>latest</LangVersion>
+    <ImplicitUsings>disable</ImplicitUsings>
+    <GenerateDependencyFile>false</GenerateDependencyFile>
+    <CopyLocalLockFileAssemblies>false</CopyLocalLockFileAssemblies>
+    <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
+    <!-- Decompiled game code uses Godot types whose implicit conversions trigger these. -->
+    <NoWarn>$(NoWarn);CS8600;CS8602;CS8604</NoWarn>
+  </PropertyGroup>
+
+  <!-- Location of the Slay the Spire 2 install. Override with: dotnet build -p:GameDir="..." -->
+  <PropertyGroup Condition="'$(GameDir)' == '' And $([MSBuild]::IsOSPlatform('Windows'))">
+    <GameDir>C:\Program Files (x86)\Steam\steamapps\common\Slay the Spire 2</GameDir>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(GameDir)' == ''">
+    <GameDir>/mnt/c/Program Files (x86)/Steam/steamapps/common/Slay the Spire 2</GameDir>
+  </PropertyGroup>
+  <PropertyGroup>
+    <GameDataDir>$(GameDir)/data_sts2_windows_x86_64</GameDataDir>
+    <ModInstallDir>$(GameDir)/mods/HandAndBrain</ModInstallDir>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Reference Include="sts2">
+      <HintPath>$(GameDataDir)/sts2.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="GodotSharp">
+      <HintPath>$(GameDataDir)/GodotSharp.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="0Harmony">
+      <HintPath>$(GameDataDir)/0Harmony.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="HandAndBrain.json" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
+  <!-- dotnet build -p:InstallMod=true copies the mod into <game>/mods/HandAndBrain -->
+  <Target Name="InstallMod" AfterTargets="Build" Condition="'$(InstallMod)' == 'true'">
+    <MakeDir Directories="$(ModInstallDir)" />
+    <Copy SourceFiles="$(OutDir)HandAndBrain.dll;$(OutDir)HandAndBrain.json" DestinationFolder="$(ModInstallDir)" />
+    <Message Importance="high" Text="Installed Hand and Brain to $(ModInstallDir)" />
+  </Target>
+
+</Project>
