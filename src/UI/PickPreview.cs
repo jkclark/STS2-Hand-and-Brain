@@ -46,6 +46,27 @@ public static class ModUi
 		label.AddThemeConstantOverride("outline_size", 10);
 		return label;
 	}
+
+	/// <summary>
+	/// Fills in a card node's title, cost and text. NCard.Create hands out pooled nodes: a reused
+	/// node is already ready and still shows whatever card it displayed last (often one from
+	/// someone's deck) until UpdateVisuals is called. A new node fills its text in once ready.
+	/// </summary>
+	public static void UpdateCardVisuals(NCard node, PileType pile)
+	{
+		if (node.IsNodeReady())
+		{
+			node.UpdateVisuals(pile, CardPreviewMode.Normal);
+			return;
+		}
+		node.Connect(Node.SignalName.Ready, Callable.From(delegate
+		{
+			if (node.Model != null)
+			{
+				node.UpdateVisuals(pile, CardPreviewMode.Normal);
+			}
+		}), (uint)GodotObject.ConnectFlags.OneShot);
+	}
 }
 
 /// <summary>
@@ -411,13 +432,8 @@ public sealed class PickPreviewPanel
 		NCard? node = NCard.Create(card);
 		if (node != null)
 		{
-			// The card's text is only filled in once it is in the scene tree; before that it
-			// shows its placeholder text.
-			node.Ready += delegate
-			{
-				node.UpdateVisuals(PileType.None, CardPreviewMode.Normal);
-			};
 			slot.AddChildSafely(node);
+			ModUi.UpdateCardVisuals(node, PileType.None);
 			node.Scale = Vector2.One * scale;
 			// NCard draws centred on its origin.
 			node.Position = size * 0.5f;
@@ -457,7 +473,7 @@ public sealed class PickPreviewPanel
 		trailContainer.AddChildSafely(card);
 		card.GlobalPosition = startPosition;
 		card.Scale = Vector2.One * startScale;
-		card.UpdateVisuals(PileType.Deck, CardPreviewMode.Normal);
+		ModUi.UpdateCardVisuals(card, PileType.Deck);
 		// Whichever card was picked, it grows to the same spot: where the middle card sits (the card
 		// row is centred in the panel), nudged to keep its label on screen and below the top bar.
 		Vector2 viewport = _root.GetViewportRect().Size;
