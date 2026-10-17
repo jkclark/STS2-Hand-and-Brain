@@ -70,7 +70,12 @@ SlayTheSpire2.exe --force-steam off --fastmp host_standard
 SlayTheSpire2.exe --force-steam off --fastmp join --clientId 1000
 ```
 
-`--force-steam off` keeps each copy on its own test profile instead of your Steam save.
+`--force-steam off` keeps each copy on its own test profile instead of your Steam save. Start the
+copies a few seconds apart: copies launched at the same moment share `godot.log` while starting
+up, and one of them can fail to open. `--log-file <path>` gives each copy its own log.
+
+Or run `tools\launch-test.bat` (host + 2 clients, staggered, with 1 HP enemies and a log file
+per copy; `tools\launch-test.bat 4` for four players).
 
 Add `--hab-enemies-1hp` to make every enemy spawn with 1 HP. Pass it to **every** copy: combat is
 simulated on each machine, so copies that disagree about enemy HP will desync.
@@ -121,5 +126,8 @@ Built and verified against game version **v0.111.0**. Patches that reach into pr
 - If the chooser or the recipient is dead when rewards are handed out, the card reward stays
   with its owner, as in vanilla.
 - The lobby panel, preview panel and arrows use plain Godot controls, not the game's styled widgets.
+- The chooser and the recipient act at the same time on the reward screen. If the recipient takes a
+  relic that changes card rewards (e.g. Molten Egg) within a network round-trip of the chooser
+  picking, peers can disagree about whether the picked card was upgraded.
 - Hiding cards is honor-system UI: every peer simulates every reward, so a modified client could
   still read them.
