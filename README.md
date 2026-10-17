@@ -18,9 +18,9 @@ With players A, B and C in that order: A picks B's cards, B picks C's, and C pic
   again to close it. The key can be changed in the game's input settings ("Hand and Brain: View
   Deck You Pick For", the last row). The card reward screen also has a **"Y's Deck"** button
   (draw-pile hotkey).
-- **Who picks for whom.** Curved arrows beside the player list on the left run from each chooser
-  (dot) to the player they pick for (arrowhead), each in its own colour. Arrows that
-  don't involve you are dimmer.
+- **Who picks for whom.** Hover a player in the player list on the left to see it: a gold arrow
+  runs from them to the player they pick for, a cream arrow from the player who picks for them,
+  and a tooltip spells it out.
 - **Watching your pick.** On the rewards and card reward screens, a panel in the top right corner
   shows the cards your chooser is being offered for you (dimmed). When a card is picked for you, it
   lifts out of the panel with "Chosen by X" and flies into your deck, and the panel goes away. If
@@ -87,7 +87,7 @@ reward screen, and it broadcasts the choice. The mod hooks that flow with Harmon
 | `CardReward.OnSelect` | For redirected rewards, the *chooser* sees the screen and sends the network choice. The card, relic hooks and run history stay the recipient's. |
 | `CardReward.Description`, `NCardRewardSelectionScreen.RefreshOptions` | "Choose a card for Y" text, the "Y's Deck" button and the "Hide from Y" toggle. |
 | `NRewardsScreen._Ready` | Adds the recipient's preview panel. |
-| `NMultiplayerPlayerStateContainer.Initialize` | Adds the chooser → recipient arrows. |
+| `NMultiplayerPlayerState.UpdateHighlightedState` | Shows the chooser → recipient arrows and tooltip while a player row is hovered. |
 | `NHotkeyManager._UnhandledInput` | The hotkey that toggles the recipient's deck view. |
 | `NInputManager` defaults / save / reset, `NInputSettingsEntry._Ready` | Adds the hotkey to the game's keybinding menu. Its binding is kept in the mod's own file. |
 | `ModManager.GetGameplayRelevantModNameList` | Adds a build fingerprint to the mod version peers compare when connecting. |
@@ -109,7 +109,7 @@ Source layout:
 - `src/Patches/TestingPatches.cs`: the `--hab-enemies-1hp` testing flag
 - `src/UI/LobbyPanel.cs`: the lobby settings panel
 - `src/UI/PickPreview.cs`: the recipient's preview panel and pick/skip notifications
-- `src/UI/PickerArrows.cs`: the arrows beside the player list
+- `src/UI/PickerArrows.cs`: the hover arrows and tooltip beside the player list
 
 Built and verified against game version **v0.111.0**. Patches that reach into private game code
 (`CardReward.OnSelect`, `RewardsSetSynchronizer`) may need updating when the game updates.

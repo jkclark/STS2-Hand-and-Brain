@@ -38,6 +38,18 @@ public static class ModStrings
 
 	public const string ChosenBy = "HAND_AND_BRAIN.CHOSEN_BY";
 
+	public const string HoverTitle = "HAND_AND_BRAIN.HOVER_TITLE";
+
+	public const string HoverPicksFor = "HAND_AND_BRAIN.HOVER_PICKS_FOR";
+
+	public const string HoverPickedBy = "HAND_AND_BRAIN.HOVER_PICKED_BY";
+
+	public const string HoverYouPickFor = "HAND_AND_BRAIN.HOVER_YOU_PICK_FOR";
+
+	public const string HoverPicksForYou = "HAND_AND_BRAIN.HOVER_PICKS_FOR_YOU";
+
+	public const string HoverHotkey = "HAND_AND_BRAIN.HOVER_HOTKEY";
+
 	private static readonly Dictionary<string, string> _english = new Dictionary<string, string>
 	{
 		[RewardDescription] = "Choose a card for {Player}",
@@ -49,7 +61,13 @@ public static class ModStrings
 		[PreviewChoosing] = "{Player} is choosing for you from:",
 		[PreviewHiddenCards] = "(Hidden)",
 		[PreviewSkipped] = "{Player} skipped your card reward",
-		[ChosenBy] = "Chosen by {Player}"
+		[ChosenBy] = "Chosen by {Player}",
+		[HoverTitle] = "Hand and Brain",
+		[HoverPicksFor] = "Picks card rewards for [gold]{Player}[/gold].",
+		[HoverPickedBy] = "Card rewards picked by [gold]{Player}[/gold].",
+		[HoverYouPickFor] = "You pick card rewards for [gold]{Player}[/gold].",
+		[HoverPicksForYou] = "[gold]{Player}[/gold] picks your card rewards.",
+		[HoverHotkey] = "Press [gold]{Hotkey}[/gold] to view [gold]{Player}[/gold]'s deck."
 	};
 
 	private static readonly Dictionary<string, string> _englishSettings = new Dictionary<string, string>
