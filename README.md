@@ -86,7 +86,7 @@ reward screen, and it broadcasts the choice. The mod hooks that flow with Harmon
 | `NMultiplayerPlayerStateContainer.Initialize` | Adds the chooser → recipient arrows. |
 | `StartRunLobby` / `LoadRunLobby` | Sync settings host → clients with two small custom net messages. |
 | `RunManager.SetUp*Multiplayer` | Registers the run's one custom message: the chooser's "hide cards" toggle. |
-| `RunManager.SetUp*` | Lock in the settings when the run starts or loads. |
+| `RunManager.SetUp*` | Lock in the settings when the run starts or loads. New runs also drop saved act maps left over from an earlier failed load. |
 | `N{CharacterSelect,CustomRun,DailyRun}Screen._Ready` | Adds the lobby settings panel. |
 
 Source layout:

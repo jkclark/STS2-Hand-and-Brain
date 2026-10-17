@@ -176,19 +176,19 @@ public static class RunActivation
 	}
 }
 
+// The net service is taken from the lobby, not RunManager.NetService: SetUpSavedMultiplayer is
+// async, so a postfix runs at its first await, before RunManager.NetService has been set. Reading
+// it there threw on the first load after launching the game, and the load carried on in the
+// background with a half set-up run (see ClearStaleSavedMapsPatch).
 [HarmonyPatch(typeof(RunManager), nameof(RunManager.SetUpNewMultiplayer))]
 public static class SetUpNewMultiplayerPatch
 {
-	public static void Prefix(RunState state)
+	public static void Prefix(RunState state, StartRunLobby lobby)
 	{
 		RunActivation.Activate(state, HandAndBrainState.Lobby);
 		// Everyone keeps a copy so whoever hosts the reload can restore the pairing.
 		SettingsStore.Save(state.Rng.StringSeed, state.Players.Select((Player p) => p.NetId), HandAndBrainState.Active ?? new HandAndBrainSettings());
-	}
-
-	public static void Postfix()
-	{
-		RunSync.Register(RunManager.Instance.NetService);
+		RunSync.Register(lobby.NetService);
 	}
 }
 
@@ -201,11 +201,32 @@ public static class SetUpSavedMultiplayerPatch
 			? HandAndBrainState.Lobby
 			: SettingsStore.Load(state.Rng.StringSeed, state.Players.Select((Player p) => p.NetId));
 		RunActivation.Activate(state, settings);
+		RunSync.Register(lobby.NetService);
+	}
+}
+
+/// <summary>
+/// Vanilla only resets RunManager.SavedMapsToLoad when a saved run is loaded, and a map is only
+/// removed from it once its act is reached. A load that fails part-way leaves the saved run's maps
+/// behind, and the next new run then uses that stale map when it reaches the same act, on that
+/// peer alone. A brand-new run never has saved maps, so drop any leftovers.
+/// </summary>
+[HarmonyPatch]
+public static class ClearStaleSavedMapsPatch
+{
+	public static IEnumerable<MethodBase> TargetMethods()
+	{
+		yield return AccessTools.Method(typeof(RunManager), nameof(RunManager.SetUpNewMultiplayer));
+		yield return AccessTools.Method(typeof(RunManager), nameof(RunManager.SetUpNewSingleplayer));
 	}
 
-	public static void Postfix()
+	public static void Prefix(RunManager __instance)
 	{
-		RunSync.Register(RunManager.Instance.NetService);
+		if (__instance.SavedMapsToLoad != null)
+		{
+			Log.Warn($"[HandAndBrain] Discarding stale saved maps for acts [{string.Join(",", __instance.SavedMapsToLoad.Keys)}] left over from an earlier load");
+			__instance.SavedMapsToLoad = null;
+		}
 	}
 }
 
