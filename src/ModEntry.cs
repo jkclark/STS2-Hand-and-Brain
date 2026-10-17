@@ -13,7 +13,7 @@ public static class ModEntry
 	public static void Init()
 	{
 		new Harmony("jclark.HandAndBrain").PatchAll(typeof(ModEntry).Assembly);
-		RewardScreenDecorations.RegisterInputActions();
+		RecipientDeckKeybind.Register();
 		Log.Info($"[HandAndBrain] Loaded build {GameplayModListPatch.BuildId}");
 	}
 }

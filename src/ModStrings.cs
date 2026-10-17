@@ -1,15 +1,22 @@
 using System.Collections.Generic;
+using System.Linq;
 using MegaCrit.Sts2.Core.Localization;
 
 namespace HandAndBrain;
 
 /// <summary>
-/// The mod's in-game strings. They are merged into the game's "gameplay_ui" table on demand
-/// (and again after a language change reloads the tables), so they can be used as LocStrings.
+/// The mod's in-game strings. They are merged into the game's "gameplay_ui" and "settings_ui"
+/// tables on demand (and again after a language change reloads the tables), so they can be used
+/// as LocStrings.
 /// </summary>
 public static class ModStrings
 {
 	private const string Table = "gameplay_ui";
+
+	private const string SettingsTable = "settings_ui";
+
+	/// <summary>Key in commandToLocTitle for the keybinding row; the settings menu looks up INPUT_SETTINGS.INPUT_TITLE.{this}.</summary>
+	public const string KeybindTitle = "handAndBrainViewDeck";
 
 	public const string RewardDescription = "HAND_AND_BRAIN.REWARD_DESCRIPTION";
 
@@ -45,6 +52,11 @@ public static class ModStrings
 		[ChosenBy] = "Chosen by {Player}"
 	};
 
+	private static readonly Dictionary<string, string> _englishSettings = new Dictionary<string, string>
+	{
+		["INPUT_SETTINGS.INPUT_TITLE." + KeybindTitle] = "Hand and Brain: View Deck You Pick For"
+	};
+
 	/// <summary>The formatted string with {Player} filled in.</summary>
 	public static string Format(string key, string playerName)
 	{
@@ -59,12 +71,18 @@ public static class ModStrings
 		return new LocString(Table, key);
 	}
 
-	private static void EnsureMerged()
+	public static void EnsureMerged()
 	{
-		LocTable table = LocManager.Instance.GetTable(Table);
-		if (!table.HasEntry(RewardDescription))
+		Merge(Table, _english);
+		Merge(SettingsTable, _englishSettings);
+	}
+
+	private static void Merge(string tableName, Dictionary<string, string> entries)
+	{
+		LocTable table = LocManager.Instance.GetTable(tableName);
+		if (!table.HasEntry(entries.Keys.First()))
 		{
-			table.MergeWith(new Dictionary<string, string>(_english));
+			table.MergeWith(new Dictionary<string, string>(entries));
 		}
 	}
 }

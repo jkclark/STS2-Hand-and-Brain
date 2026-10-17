@@ -14,8 +14,10 @@ With players A, B and C in that order: A picks B's cards, B picks C's, and C pic
   "Choose a card for Y". Opening it shows the cards *Y* would have been offered: Y's character
   pool, Y's relic effects, and Y's Skip/Reroll/Sacrifice options. The card you pick goes into
   **Y's** deck.
-- **Their deck.** The card reward screen has a **"Y's Deck"** button (hotkey **R**, or the
-  draw-pile hotkey) that opens the regular deck view for Y's deck.
+- **Their deck.** Press **R** anywhere in the run to open the deck of the player you pick for, and
+  again to close it. The key can be changed in the game's input settings ("Hand and Brain: View
+  Deck You Pick For", the last row). The card reward screen also has a **"Y's Deck"** button
+  (draw-pile hotkey).
 - **Who picks for whom.** Curved arrows beside the player list on the left run from each chooser
   (dot) to the player they pick for (arrowhead), each in its own colour. Arrows that
   don't involve you are dimmer.
@@ -86,6 +88,8 @@ reward screen, and it broadcasts the choice. The mod hooks that flow with Harmon
 | `CardReward.Description`, `NCardRewardSelectionScreen.RefreshOptions` | "Choose a card for Y" text, the "Y's Deck" button and the "Hide from Y" toggle. |
 | `NRewardsScreen._Ready` | Adds the recipient's preview panel. |
 | `NMultiplayerPlayerStateContainer.Initialize` | Adds the chooser → recipient arrows. |
+| `NHotkeyManager._UnhandledInput` | The hotkey that toggles the recipient's deck view. |
+| `NInputManager` defaults / save / reset, `NInputSettingsEntry._Ready` | Adds the hotkey to the game's keybinding menu. Its binding is kept in the mod's own file. |
 | `ModManager.GetGameplayRelevantModNameList` | Adds a build fingerprint to the mod version peers compare when connecting. |
 | `StartRunLobby` / `LoadRunLobby` | Sync settings host → clients with two small custom net messages. |
 | `RunManager.SetUp*Multiplayer` | Registers the run's one custom message: the chooser's "hide cards" toggle. |
@@ -100,6 +104,7 @@ Source layout:
 - `src/Patches/RewardPatches.cs`: reward redirection
 - `src/Patches/RewardScreenPatches.cs`: card reward screen additions
 - `src/Patches/LobbyPatches.cs`: lobby sync and run start/load
+- `src/Patches/KeybindPatches.cs`: the hotkey's row in the game's keybinding menu
 - `src/Patches/VersionPatches.cs`: build fingerprint in the multiplayer handshake
 - `src/Patches/TestingPatches.cs`: the `--hab-enemies-1hp` testing flag
 - `src/UI/LobbyPanel.cs`: the lobby settings panel
