@@ -31,7 +31,9 @@ With players A, B and C in that order: A picks B's cards, B picks C's, and C pic
 - Saved runs resume with the same pairing. The settings are stored per run in
   `%APPDATA%/SlayTheSpire2/hand_and_brain/` (Godot's user data folder).
 
-Every player in the lobby needs the mod installed.
+Every player in the lobby needs the mod installed, and the **same build** of it: each build
+reports a fingerprint (e.g. `HandAndBrain-0.2.0+1a2b3c4d`), and the game refuses to connect
+players whose builds differ. Matching the rest of your mod lists is also a good idea.
 
 ## Building
 
@@ -84,6 +86,7 @@ reward screen, and it broadcasts the choice. The mod hooks that flow with Harmon
 | `CardReward.Description`, `NCardRewardSelectionScreen.RefreshOptions` | "Choose a card for Y" text, the "Y's Deck" button and the "Hide from Y" toggle. |
 | `NRewardsScreen._Ready` | Adds the recipient's preview panel. |
 | `NMultiplayerPlayerStateContainer.Initialize` | Adds the chooser → recipient arrows. |
+| `ModManager.GetGameplayRelevantModNameList` | Adds a build fingerprint to the mod version peers compare when connecting. |
 | `StartRunLobby` / `LoadRunLobby` | Sync settings host → clients with two small custom net messages. |
 | `RunManager.SetUp*Multiplayer` | Registers the run's one custom message: the chooser's "hide cards" toggle. |
 | `RunManager.SetUp*` | Lock in the settings when the run starts or loads. New runs also drop saved act maps left over from an earlier failed load. |
@@ -97,6 +100,7 @@ Source layout:
 - `src/Patches/RewardPatches.cs`: reward redirection
 - `src/Patches/RewardScreenPatches.cs`: card reward screen additions
 - `src/Patches/LobbyPatches.cs`: lobby sync and run start/load
+- `src/Patches/VersionPatches.cs`: build fingerprint in the multiplayer handshake
 - `src/Patches/TestingPatches.cs`: the `--hab-enemies-1hp` testing flag
 - `src/UI/LobbyPanel.cs`: the lobby settings panel
 - `src/UI/PickPreview.cs`: the recipient's preview panel and pick/skip notifications
