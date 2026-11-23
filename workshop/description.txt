@@ -1,0 +1,57 @@
+[h1]Hand and Brain[/h1]
+A multiplayer variant inspired by "hand and brain" chess. Everyone plays their own deck, but after each combat, [b]another player picks your card reward[/b].
+
+You play the hand. Someone else is the brain.
+
+[h2]How it works[/h2]
+The host sets an order for the players, and each player picks for the next one in line. With players A, B and C:
+[list]
+[*]A picks B's cards
+[*]B picks C's cards
+[*]C picks A's cards
+[/list]
+With two players, you simply pick for each other.
+
+After a combat, your rewards screen has a card reward labelled "Choose a card for Alice". It offers the cards [b]Alice[/b] would have been offered: their character's cards, their relic effects, and their Skip, Reroll and Sacrifice options. The card you pick goes into [b]Alice's[/b] deck. Meanwhile, somebody else is doing the same for you.
+
+Gold, potions, relics, shops and events all work as normal.
+
+[h2]Starting a run[/h2]
+[olist]
+[*]Make sure every player is subscribed to this mod and has restarted the game.
+[*]Open a multiplayer lobby: standard, daily or custom.
+[*]The host ticks the [b]Hand and brain[/b] checkbox in the top right corner. It's off by default.
+[*]With three or more players, the host can use the up and down arrows to change who picks for whom. Everyone can see the order.
+[/olist]
+Loading a saved run keeps the same order.
+
+[h2]Features[/h2]
+[b]See what you're being offered.[/b] While your picker is choosing, a panel in the top right shows the cards they're choosing from. When they pick one, it lifts out of the panel and flies into your deck. If they skip, the panel tells you.
+
+[b]See everyone else's offers.[/b] A smaller panel below it shows the cards being offered to the other players while their pickers choose, so the whole table can argue about every pick.
+
+[b]Study their deck and relics.[/b] Press [b]R[/b] at almost any point in the run to open the deck of the player you pick for, with their relics across the top in place of yours. Press it again to close it. You can change the key in the game's input settings ("Hand and Brain: View Deck You Pick For"). The card reward screen has a button for it too.
+
+[b]Keep it a surprise.[/b] "Hide from Alice" on the card reward screen hides the cards from the player you're picking for. Everyone else can still see them.
+
+[b]Never forget who picks for whom.[/b] Hover over a player in the list on the left to see arrows to the player they pick for and from the player who picks for them.
+
+[h2]Requirements[/h2]
+[list]
+[*]Game version [b]v0.113.1[/b] or newer. Game updates can break mods, so check the change notes if something stops working.
+[*]Two or more players. The mod does nothing in singleplayer.
+[*][b]Every player needs the same version of the mod.[/b] The game refuses to connect players whose versions differ. If you can't connect, let Steam finish downloading updates and restart the game on every machine. It also helps to match the rest of your mods.
+[*]No other mods are required.
+[/list]
+
+[h2]Good to know[/h2]
+[list]
+[*]Only card rewards from the end of a combat are picked by someone else. Card rewards from events, relics and other sources are still yours to pick.
+[*]If you or your picker is dead when rewards are handed out, your card reward stays with you, as in the normal game.
+[*]You and your picker act at the same time. If you take a relic that changes card rewards (such as Molten Egg) at almost the same moment they pick, the game can fall out of sync. If you're offered one, take it before they pick or wait until they're done.
+[*]Hiding cards is for fun and relies on the honor system.
+[*]If you have five or more cards to choose from, the panel showing other players' offers may be left out on the card reward screen because there's no room for it.
+[/list]
+
+[h2]Feedback[/h2]
+Found a bug or have an idea? Leave a comment here, or open an issue on [url=https://github.com/jkclark/STS2-Hand-and-Brain]GitHub[/url], where the source code is available. For bugs, include your game version, the number of players, and what happened.
