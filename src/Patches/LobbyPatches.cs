@@ -94,7 +94,7 @@ public static class LobbySync
 	}
 }
 
-[HarmonyPatch(typeof(StartRunLobby), MethodType.Constructor, new[] { typeof(GameMode), typeof(INetGameService), typeof(IStartRunLobbyListener), typeof(int) })]
+[HarmonyPatch(typeof(StartRunLobby), MethodType.Constructor, new[] { typeof(GameMode), typeof(bool), typeof(INetGameService), typeof(IStartRunLobbyListener), typeof(int) })]
 public static class StartRunLobbyCtorPatch
 {
 	public static void Postfix(StartRunLobby __instance)
