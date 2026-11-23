@@ -27,7 +27,7 @@ public static class ModUi
 {
 	private static Font? _font;
 
-	private static Font? LabelFont => _font ??= ResourceLoader.Load<Font>("res://fonts/kreon_bold.ttf", null, ResourceLoader.CacheMode.Reuse);
+	public static Font? LabelFont => _font ??= ResourceLoader.Load<Font>("res://fonts/kreon_bold.ttf", null, ResourceLoader.CacheMode.Reuse);
 
 	public static Label MakeLabel(string text, int fontSize)
 	{

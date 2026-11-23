@@ -29,7 +29,20 @@ public sealed class LobbyPanel
 
 	private readonly PanelContainer _root;
 
-	private readonly CheckBox _enabledToggle;
+	private static readonly Color _gold = new Color(0.94f, 0.78f, 0.32f);
+
+	private static readonly Color _green = new Color(0.45f, 0.85f, 0.45f);
+
+	private static readonly Color _gray = new Color(0.55f, 0.55f, 0.6f);
+
+	/// <summary>The whole row is clickable, not just the checkbox drawn at its left.</summary>
+	private readonly Button _enabledToggle;
+
+	private readonly StyleBoxFlat _panelStyle;
+
+	private readonly Texture2D? _tickedIcon;
+
+	private readonly Texture2D? _untickedIcon;
 
 	private readonly VBoxContainer _rows;
 
@@ -55,6 +68,9 @@ public sealed class LobbyPanel
 		_root.OffsetTop = 24f;
 		_root.GrowHorizontal = Control.GrowDirection.Begin;
 
+		_panelStyle = MakeStyle(new Color(0.06f, 0.07f, 0.11f, 0.92f), _gold, 2);
+		_root.AddThemeStyleboxOverride("panel", _panelStyle);
+
 		MarginContainer margin = new MarginContainer();
 		foreach (string side in new[] { "margin_left", "margin_right", "margin_top", "margin_bottom" })
 		{
@@ -66,12 +82,35 @@ public sealed class LobbyPanel
 		column.AddThemeConstantOverride("separation", 8);
 		margin.AddChild(column);
 
-		_enabledToggle = new CheckBox
+		_tickedIcon = ResourceLoader.Load<Texture2D>("res://images/atlases/ui_atlas.sprites/checkbox_ticked.tres", null, ResourceLoader.CacheMode.Reuse);
+		_untickedIcon = ResourceLoader.Load<Texture2D>("res://images/atlases/ui_atlas.sprites/checkbox_unticked.tres", null, ResourceLoader.CacheMode.Reuse);
+		_enabledToggle = new Button
 		{
-			Text = "Hand and brain",
-			FocusMode = Control.FocusModeEnum.None
+			ToggleMode = true,
+			Alignment = HorizontalAlignment.Left,
+			FocusMode = Control.FocusModeEnum.None,
+			CustomMinimumSize = new Vector2(0f, 60f)
 		};
-		_enabledToggle.AddThemeFontSizeOverride("font_size", FontSize + 4);
+		foreach (string state in new[] { "normal", "hover", "pressed", "hover_pressed", "disabled" })
+		{
+			_enabledToggle.AddThemeStyleboxOverride(state, new StyleBoxEmpty());
+		}
+		foreach (string state in new[] { "font_color", "font_pressed_color", "font_disabled_color" })
+		{
+			_enabledToggle.AddThemeColorOverride(state, Colors.White);
+		}
+		foreach (string state in new[] { "font_hover_color", "font_hover_pressed_color" })
+		{
+			_enabledToggle.AddThemeColorOverride(state, _gold);
+		}
+		_enabledToggle.AddThemeColorOverride("icon_disabled_color", Colors.White);
+		_enabledToggle.AddThemeConstantOverride("icon_max_width", 48);
+		_enabledToggle.AddThemeConstantOverride("h_separation", 10);
+		if (ModUi.LabelFont is Font font)
+		{
+			_enabledToggle.AddThemeFontOverride("font", font);
+		}
+		_enabledToggle.AddThemeFontSizeOverride("font_size", FontSize + 6);
 		_enabledToggle.Toggled += OnEnabledToggled;
 		column.AddChild(_enabledToggle);
 
@@ -160,6 +199,7 @@ public sealed class LobbyPanel
 		bool isHost = IsHost(lobby);
 		_enabledToggle.SetPressedNoSignal(enabled);
 		_enabledToggle.Disabled = !isHost;
+		StyleToggle(isHost, enabled);
 		foreach (Node child in _rows.GetChildren())
 		{
 			_rows.RemoveChild(child);
@@ -197,8 +237,32 @@ public sealed class LobbyPanel
 		}
 		string last = (order.Count >= 2) ? $" {NameOf(lobby, order[^1])} picks for {NameOf(lobby, order[0])}." : string.Empty;
 		_footer.Text = isHost
-			? ((order.Count >= 2) ? $"Card rewards after combat are chosen by the player above you.{last}" : "Waiting for more players.")
+			? ((order.Count < 2) ? "Waiting for more players."
+				: !enabled ? "Off: everyone picks their own cards. Click the box above to turn it on."
+				: $"Card rewards after combat are chosen by the player above you.{last}")
 			: "Only the host can change these settings.";
+	}
+
+	private static StyleBoxFlat MakeStyle(Color background, Color border, int borderWidth)
+	{
+		StyleBoxFlat style = new StyleBoxFlat
+		{
+			BgColor = background,
+			BorderColor = border
+		};
+		style.SetBorderWidthAll(borderWidth);
+		style.SetCornerRadiusAll(8);
+		style.ContentMarginLeft = 10f;
+		style.ContentMarginRight = 10f;
+		return style;
+	}
+
+	/// <summary>The panel's border is green while on, and gold while off (grey for clients, who can't change it).</summary>
+	private void StyleToggle(bool isHost, bool enabled)
+	{
+		_enabledToggle.Text = enabled ? "Hand and brain: ON" : "Hand and brain: OFF";
+		_enabledToggle.Icon = enabled ? _tickedIcon : _untickedIcon;
+		_panelStyle.BorderColor = enabled ? _green : isHost ? _gold : _gray;
 	}
 
 	private static Button MakeMoveButton(string text, bool enabled, System.Action onPressed)
