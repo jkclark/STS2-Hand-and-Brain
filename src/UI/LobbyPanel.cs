@@ -25,6 +25,14 @@ public sealed class LobbyPanel
 
 	private const int FontSize = 22;
 
+	/// <summary>The box is at least this wide, and grows to the left to fit longer names.</summary>
+	private const float MinWidth = 500f;
+
+	private const float RightMargin = 24f;
+
+	/// <summary>Longer rows than this end in an ellipsis, so the box doesn't cover half the screen.</summary>
+	private const float MaxRowTextWidth = 620f;
+
 	private readonly Control _screen;
 
 	private readonly PanelContainer _root;
@@ -63,8 +71,8 @@ public sealed class LobbyPanel
 		_root.AnchorRight = 1f;
 		_root.AnchorTop = 0f;
 		_root.AnchorBottom = 0f;
-		_root.OffsetLeft = -440f;
-		_root.OffsetRight = -24f;
+		_root.OffsetLeft = -RightMargin - MinWidth;
+		_root.OffsetRight = -RightMargin;
 		_root.OffsetTop = 24f;
 		_root.GrowHorizontal = Control.GrowDirection.Begin;
 
@@ -217,7 +225,7 @@ public sealed class LobbyPanel
 			{
 				Text = (order.Count >= 2) ? $"{i + 1}. {NameOf(lobby, chooser)} picks for {NameOf(lobby, recipient)}" : $"{i + 1}. {NameOf(lobby, chooser)}",
 				SizeFlagsHorizontal = Control.SizeFlags.ExpandFill,
-				ClipText = true
+				TextOverrunBehavior = TextServer.OverrunBehavior.TrimEllipsis
 			};
 			label.AddThemeFontSizeOverride("font_size", FontSize);
 			row.AddChild(label);
@@ -234,6 +242,10 @@ public sealed class LobbyPanel
 				}));
 			}
 			_rows.AddChild(row);
+			// A label that trims its text asks for no width of its own. Measured once it's in the tree,
+			// where it has its theme's font.
+			float textWidth = label.GetThemeFont("font").GetStringSize(label.Text, HorizontalAlignment.Left, -1f, FontSize).X;
+			label.CustomMinimumSize = new Vector2(Mathf.Min(Mathf.Ceil(textWidth) + 4f, MaxRowTextWidth), 0f);
 		}
 		string last = (order.Count >= 2) ? $" {NameOf(lobby, order[^1])} picks for {NameOf(lobby, order[0])}." : string.Empty;
 		_footer.Text = isHost
