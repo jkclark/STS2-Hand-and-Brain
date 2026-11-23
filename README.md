@@ -25,9 +25,13 @@ With players A, B and C in that order: A picks B's cards, B picks C's, and C pic
   shows the cards your chooser is being offered for you (dimmed). When a card is picked for you, it
   lifts out of the panel with "Chosen by X" and flies into your deck, and the panel goes away. If
   they skip, the panel says so; the first skip makes it flash, later ones don't.
+- **Watching everyone else's picks.** A smaller panel below it shows the cards being offered to
+  the other players while their choosers look at them. Rewards drop out once a card is picked. On
+  the card reward screen the panel stays to the right of the cards, and is left out if there's no
+  room for it there (e.g. when you're offered five cards).
 - **Hiding the cards.** The chooser's card reward screen has a **"Hide from Y"** toggle
-  (discard-pile hotkey). While it's on, Y's panel shows "(Hidden)" where the cards would be. The
-  setting carries over between combats for the rest of the run.
+  (discard-pile hotkey). While it's on, Y's panel shows "(Hidden)" where the cards would be; other
+  players still see them. The setting carries over between combats for the rest of the run.
 - **Everything else is unchanged:** events, shops, gold, potions, relics, and card rewards that
   aren't end-of-combat rewards.
 - Saved runs resume with the same pairing. The settings are stored per run in
@@ -91,7 +95,7 @@ reward screen, and it broadcasts the choice. The mod hooks that flow with Harmon
 | `RewardsSetSynchronizer.SelectLocalReward` | Allows selecting a reward owned by another player when you are its chooser. |
 | `CardReward.OnSelect` | For redirected rewards, the *chooser* sees the screen and sends the network choice. The card, relic hooks and run history stay the recipient's. |
 | `CardReward.Description`, `NCardRewardSelectionScreen.RefreshOptions` | "Choose a card for Y" text, the "Y's Deck" button and the "Hide from Y" toggle. |
-| `NRewardsScreen._Ready` | Adds the recipient's preview panel. |
+| `NRewardsScreen._Ready` | Adds the preview panels. |
 | `NMultiplayerPlayerState.UpdateHighlightedState` | Shows the chooser → recipient arrows and tooltip while a player row is hovered. |
 | `NHotkeyManager._UnhandledInput` | The hotkey that toggles the recipient's deck view. |
 | `NInputManager` defaults / save / reset, `NInputSettingsEntry._Ready` | Adds the hotkey to the game's keybinding menu. Its binding is kept in the mod's own file. |
@@ -113,10 +117,10 @@ Source layout:
 - `src/Patches/VersionPatches.cs`: build fingerprint in the multiplayer handshake
 - `src/Patches/TestingPatches.cs`: the `--hab-enemies-1hp` testing flag
 - `src/UI/LobbyPanel.cs`: the lobby settings panel
-- `src/UI/PickPreview.cs`: the recipient's preview panel and pick/skip notifications
+- `src/UI/PickPreview.cs`: the preview panels and pick/skip notifications
 - `src/UI/PickerArrows.cs`: the hover arrows and tooltip beside the player list
 
-Built and verified against game version **v0.111.0**. Patches that reach into private game code
+Built and verified against game version **v0.113.1**. Patches that reach into private game code
 (`CardReward.OnSelect`, `RewardsSetSynchronizer`) may need updating when the game updates.
 
 ## Known limitations

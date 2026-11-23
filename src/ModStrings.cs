@@ -36,6 +36,12 @@ public static class ModStrings
 
 	public const string PreviewSkipped = "HAND_AND_BRAIN.PREVIEW_SKIPPED";
 
+	public const string PreviewOtherWaiting = "HAND_AND_BRAIN.PREVIEW_OTHER_WAITING";
+
+	public const string PreviewOtherChoosing = "HAND_AND_BRAIN.PREVIEW_OTHER_CHOOSING";
+
+	public const string PreviewOtherSkipped = "HAND_AND_BRAIN.PREVIEW_OTHER_SKIPPED";
+
 	public const string ChosenBy = "HAND_AND_BRAIN.CHOSEN_BY";
 
 	public const string HoverTitle = "HAND_AND_BRAIN.HOVER_TITLE";
@@ -61,6 +67,9 @@ public static class ModStrings
 		[PreviewChoosing] = "{Player} is choosing for you from:",
 		[PreviewHiddenCards] = "(Hidden)",
 		[PreviewSkipped] = "{Player} skipped your card reward",
+		[PreviewOtherWaiting] = "{Chooser} will choose a card for {Player}",
+		[PreviewOtherChoosing] = "{Chooser} is choosing for {Player} from:",
+		[PreviewOtherSkipped] = "{Chooser} skipped {Player}'s card reward",
 		[ChosenBy] = "Chosen by {Player}",
 		[HoverTitle] = "Hand and Brain",
 		[HoverPicksFor] = "Picks card rewards for [gold]{Player}[/gold].",
@@ -79,6 +88,15 @@ public static class ModStrings
 	public static string Format(string key, string playerName)
 	{
 		LocString text = Get(key);
+		text.Add("Player", playerName);
+		return text.GetFormattedText();
+	}
+
+	/// <summary>The formatted string with {Chooser} and {Player} filled in.</summary>
+	public static string Format(string key, string chooserName, string playerName)
+	{
+		LocString text = Get(key);
+		text.Add("Chooser", chooserName);
 		text.Add("Player", playerName);
 		return text.GetFormattedText();
 	}

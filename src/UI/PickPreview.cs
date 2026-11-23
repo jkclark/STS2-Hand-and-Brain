@@ -12,6 +12,7 @@ using MegaCrit.Sts2.Core.Models;
 using MegaCrit.Sts2.Core.Multiplayer.Game;
 using MegaCrit.Sts2.Core.Nodes;
 using MegaCrit.Sts2.Core.Nodes.Cards;
+using MegaCrit.Sts2.Core.Nodes.Cards.Holders;
 using MegaCrit.Sts2.Core.Nodes.CommonUi;
 using MegaCrit.Sts2.Core.Nodes.Screens;
 using MegaCrit.Sts2.Core.Nodes.Screens.CardSelection;
@@ -26,6 +27,8 @@ public static class ModUi
 {
 	private static Font? _font;
 
+	private static Font? LabelFont => _font ??= ResourceLoader.Load<Font>("res://fonts/kreon_bold.ttf", null, ResourceLoader.CacheMode.Reuse);
+
 	public static Label MakeLabel(string text, int fontSize)
 	{
 		Label label = new Label
@@ -35,16 +38,26 @@ public static class ModUi
 			AutowrapMode = TextServer.AutowrapMode.WordSmart,
 			MouseFilter = Control.MouseFilterEnum.Ignore
 		};
-		_font ??= ResourceLoader.Load<Font>("res://fonts/kreon_bold.ttf", null, ResourceLoader.CacheMode.Reuse);
-		if (_font != null)
+		if (LabelFont is Font font)
 		{
-			label.AddThemeFontOverride("font", _font);
+			label.AddThemeFontOverride("font", font);
 		}
 		label.AddThemeFontSizeOverride("font_size", fontSize);
 		label.AddThemeColorOverride("font_color", StsColors.cream);
 		label.AddThemeColorOverride("font_outline_color", new Color(0f, 0f, 0f, 0.8f));
 		label.AddThemeConstantOverride("outline_size", 10);
 		return label;
+	}
+
+	/// <summary>Size of a label's text when wrapped to <paramref name="width"/> (-1 for a single line).</summary>
+	public static Vector2 MeasureText(string text, int fontSize, float width = -1f)
+	{
+		// Room for the spacing between wrapped lines, which the font doesn't know about.
+		const float lineSpacing = 4f;
+		Font font = LabelFont ?? ThemeDB.FallbackFont;
+		Vector2 size = font.GetMultilineStringSize(text, HorizontalAlignment.Center, width, fontSize);
+		float lineHeight = font.GetHeight(fontSize);
+		return new Vector2(Mathf.Ceil(size.X), size.Y + lineSpacing * Mathf.Max(1f, Mathf.Round(size.Y / lineHeight)));
 	}
 
 	/// <summary>
@@ -147,6 +160,7 @@ public static class PickNotifications
 /// On the rewards and card reward screens, shows the recipient what their chooser is being
 /// offered for them (unless the chooser hides it), and afterwards what was picked or skipped.
 /// Sits in the top right corner, under the top bar and right of the screens' centred banners.
+/// A second, smaller panel below it shows what is being offered to the other players.
 /// </summary>
 public sealed class PickPreviewPanel
 {
@@ -177,9 +191,40 @@ public sealed class PickPreviewPanel
 	/// <summary>The panel's border plus content margins on each side.</summary>
 	private const float PanelPadding = 14f;
 
+	private const float LabelGap = 8f;
+
+	private const float SectionGap = 16f;
+
+	private const int LabelFontSize = 22;
+
+	private const float PanelGap = 12f;
+
+	private const int OthersLabelFontSize = 20;
+
+	private const float OthersMaxCardScale = 0.42f;
+
+	/// <summary>Below this the cards are too small to make out, so the other players' panel is left out.</summary>
+	private const float OthersMinCardScale = 0.2f;
+
+	/// <summary>Distance between neighbouring cards on the card reward screen.</summary>
+	private const float RewardCardSpacing = 350f;
+
+	/// <summary>Kept free around the card reward screen's cards and the buttons the panel must not cover.</summary>
+	private const float ObstacleGap = 16f;
+
+	/// <summary>Top of the card reward screen's button row (Skip etc.), measured from the screen's centre.</summary>
+	private const float RewardButtonsTop = 344f;
+
+	/// <summary>Top of the rewards screen's proceed button, as a fraction of the screen height.</summary>
+	private const float ProceedButtonTopRatio = 764f / 1080f;
+
 	private const float HoldScale = 0.7f;
 
 	private const float HoldTime = 1.6f;
+
+	private static readonly AccessTools.FieldRef<NCardRewardSelectionScreen, Control> _rewardCardRow = AccessTools.FieldRefAccess<NCardRewardSelectionScreen, Control>("_cardRow");
+
+	private static readonly AccessTools.FieldRef<NCardRewardSelectionScreen, IReadOnlyList<CardCreationResult>> _rewardOptions = AccessTools.FieldRefAccess<NCardRewardSelectionScreen, IReadOnlyList<CardCreationResult>>("_options");
 
 	private static PickPreviewPanel? _current;
 
@@ -187,22 +232,31 @@ public sealed class PickPreviewPanel
 
 	private readonly Control _root;
 
+	/// <summary>Holds both panels, pinned to the top right corner.</summary>
+	private readonly VBoxContainer _stack;
+
+	/// <summary>The local player's own card reward.</summary>
 	private readonly PanelContainer _panel;
 
 	private readonly StyleBoxFlat _style;
 
 	private readonly VBoxContainer _sections;
 
+	/// <summary>The other players' card rewards.</summary>
+	private readonly PanelContainer _othersPanel;
+
+	private readonly GridContainer _othersGrid;
+
 	private string? _renderedKey;
 
 	private Tween? _pulseTween;
 
-	/// <summary>The panel, if it exists and is on screen.</summary>
+	/// <summary>The panel, if it exists and the local player's own card reward is showing in it.</summary>
 	public static PickPreviewPanel? Current
 	{
 		get
 		{
-			if (_current == null || !GodotObject.IsInstanceValid(_current._root) || !_current._root.IsVisibleInTree())
+			if (_current == null || !GodotObject.IsInstanceValid(_current._root) || !_current._panel.IsVisibleInTree())
 			{
 				return null;
 			}
@@ -221,31 +275,35 @@ public sealed class PickPreviewPanel
 		};
 
 		_root.SetAnchorsPreset(Control.LayoutPreset.FullRect);
-		_panel = new PanelContainer
+		// Grows left and down to fit its content.
+		_stack = new VBoxContainer
 		{
 			MouseFilter = Control.MouseFilterEnum.Ignore
 		};
-		// Pinned to the top right corner; grows left and down to fit its content.
-		_panel.SetAnchorsPreset(Control.LayoutPreset.TopRight);
-		_panel.GrowHorizontal = Control.GrowDirection.Begin;
-		_panel.GrowVertical = Control.GrowDirection.End;
-		_style = new StyleBoxFlat
-		{
-			BgColor = new Color(0.05f, 0.06f, 0.1f, 0.75f),
-			BorderColor = new Color(StsColors.gold, 0.6f)
-		};
-		_style.SetBorderWidthAll(2);
-		_style.SetCornerRadiusAll(10);
-		_style.SetContentMarginAll(12f);
-		_panel.AddThemeStyleboxOverride("panel", _style);
-		_root.AddChild(_panel);
+		_stack.SetAnchorsPreset(Control.LayoutPreset.TopRight);
+		_stack.GrowHorizontal = Control.GrowDirection.Begin;
+		_stack.GrowVertical = Control.GrowDirection.End;
+		_stack.AddThemeConstantOverride("separation", (int)PanelGap);
+		_root.AddChild(_stack);
 
+		(_panel, _style) = MakePanel(new Color(StsColors.gold, 0.6f));
 		_sections = new VBoxContainer
 		{
 			MouseFilter = Control.MouseFilterEnum.Ignore
 		};
-		_sections.AddThemeConstantOverride("separation", 16);
+		_sections.AddThemeConstantOverride("separation", (int)SectionGap);
 		_panel.AddChild(_sections);
+		_stack.AddChild(_panel);
+
+		(_othersPanel, _) = MakePanel(new Color(StsColors.cream, 0.35f));
+		_othersGrid = new GridContainer
+		{
+			MouseFilter = Control.MouseFilterEnum.Ignore
+		};
+		_othersGrid.AddThemeConstantOverride("h_separation", (int)SectionGap);
+		_othersGrid.AddThemeConstantOverride("v_separation", (int)SectionGap);
+		_othersPanel.AddChild(_othersGrid);
+		_stack.AddChild(_othersPanel);
 
 		Timer timer = new Timer
 		{
@@ -260,6 +318,27 @@ public sealed class PickPreviewPanel
 		// Just above the overlay screens (rewards, card reward), below the map, deck view and top bar.
 		globalUi.MoveChild(_root, globalUi.Overlays.GetIndex() + 1);
 		_current = this;
+	}
+
+	private static (PanelContainer, StyleBoxFlat) MakePanel(Color borderColor)
+	{
+		PanelContainer panel = new PanelContainer
+		{
+			MouseFilter = Control.MouseFilterEnum.Ignore,
+			Visible = false,
+			// Each panel is only as wide as its own content, against the right edge.
+			SizeFlagsHorizontal = Control.SizeFlags.ShrinkEnd
+		};
+		StyleBoxFlat style = new StyleBoxFlat
+		{
+			BgColor = new Color(0.05f, 0.06f, 0.1f, 0.75f),
+			BorderColor = borderColor
+		};
+		style.SetBorderWidthAll(2);
+		style.SetCornerRadiusAll(10);
+		style.SetContentMarginAll(12f);
+		panel.AddThemeStyleboxOverride("panel", style);
+		return (panel, style);
 	}
 
 	public static void Attach()
@@ -294,6 +373,30 @@ public sealed class PickPreviewPanel
 		}
 	}
 
+	/// <summary>Space for the other players' panel: its outer width, and where its bottom must stay above.</summary>
+	private (float Width, float Bottom) OthersArea
+	{
+		get
+		{
+			Vector2 viewport = _root.GetViewportRect().Size;
+			if (ActiveScreenContext.Instance.GetCurrentScreen() is not NCardRewardSelectionScreen screen)
+			{
+				return (AvailableWidth, viewport.Y * ProceedButtonTopRatio - ObstacleGap);
+			}
+			// Right of the outermost card. Cards slide apart when the screen opens, so go by how many
+			// there are; when one is taken the rest stay put, so also by where they are.
+			float outermost = (_rewardOptions(screen).Count - 1) * RewardCardSpacing * 0.5f;
+			foreach (NGridCardHolder holder in _rewardCardRow(screen).GetChildren().OfType<NGridCardHolder>())
+			{
+				outermost = Mathf.Max(outermost, holder.Position.X);
+			}
+			// Cards grow to full size when hovered.
+			float cardsRight = viewport.X * 0.5f + outermost + NCard.defaultSize.X * 0.5f;
+			float width = viewport.X - RightMargin - cardsRight - ObstacleGap;
+			return (Mathf.Min(AvailableWidth, width), viewport.Y * 0.5f + RewardButtonsTop - ObstacleGap);
+		}
+	}
+
 	/// <summary>One redirected reward as the panel shows it.</summary>
 	private readonly record struct Section(string Text, List<CardModel> Cards, bool Hidden)
 	{
@@ -303,27 +406,40 @@ public sealed class PickPreviewPanel
 	private void Refresh()
 	{
 		// Once a card has been picked the panel has nothing left to say (the pick animation
-		// already showed it), so those rewards drop out.
-		List<Section> sections = HandAndBrainState.IsActive && IsOnRewardScreens()
+		// already showed it), so those rewards drop out. The rewards the local player chooses
+		// are left out too: they see those on the card reward screen itself.
+		List<RedirectedReward> rewards = HandAndBrainState.IsActive && IsOnRewardScreens()
 			? Redirects.Current
-				.Where((RedirectedReward r) => LocalContext.IsMe(r.Recipient) && !LocalContext.IsMe(r.Chooser) && r.Recipient.RunState.CurrentRoom == r.Room)
-				.Select(Describe)
-				.OfType<Section>()
+				.Where((RedirectedReward r) => !LocalContext.IsMe(r.Chooser) && r.Recipient.RunState.CurrentRoom == r.Room)
 				.ToList()
-			: new List<Section>();
-		_root.Visible = sections.Count > 0;
-		if (sections.Count == 0)
+			: new List<RedirectedReward>();
+		List<Section> mine = rewards.Where((RedirectedReward r) => LocalContext.IsMe(r.Recipient)).Select(Describe).OfType<Section>().ToList();
+		List<Section> others = rewards.Where((RedirectedReward r) => !LocalContext.IsMe(r.Recipient)).Select(DescribeOther).OfType<Section>().ToList();
+		_root.Visible = mine.Count + others.Count > 0;
+		if (!_root.Visible)
 		{
 			_renderedKey = null;
+			_panel.Visible = false;
+			_othersPanel.Visible = false;
 			return;
 		}
-		string key = Mathf.RoundToInt(AvailableWidth) + "|" + Mathf.RoundToInt(Top) + "|" + string.Join("|", sections.Select((Section s) => s.Key));
+		(float othersWidth, float othersBottom) = OthersArea;
+		string key = string.Join("|", new float[] { AvailableWidth, Top, othersWidth, othersBottom }.Select((float f) => Mathf.RoundToInt(f).ToString()))
+			+ "|" + string.Join("|", mine.Select((Section s) => s.Key))
+			+ "||" + string.Join("|", others.Select((Section s) => s.Key));
 		if (key == _renderedKey)
 		{
 			return;
 		}
 		_renderedKey = key;
-		Render(sections);
+		float top = Top;
+		float mineHeight = Render(mine);
+		RenderOthers(others, othersWidth, othersBottom - top - (mineHeight > 0f ? mineHeight + PanelGap : 0f));
+		// Shrink back to the new content, still pinned to the corner.
+		_stack.OffsetLeft = -RightMargin;
+		_stack.OffsetRight = -RightMargin;
+		_stack.OffsetTop = top;
+		_stack.OffsetBottom = top;
 	}
 
 	private static Section? Describe(RedirectedReward redirected)
@@ -338,52 +454,161 @@ public sealed class PickPreviewPanel
 		{
 			return null;
 		}
-		if (redirected.Skipped)
-		{
-			return new Section(ModStrings.Format(ModStrings.PreviewSkipped, name), new List<CardModel>(), false);
-		}
-		return new Section(ModStrings.Format(ModStrings.PreviewWaiting, name), new List<CardModel>(), false);
+		return new Section(ModStrings.Format(redirected.Skipped ? ModStrings.PreviewSkipped : ModStrings.PreviewWaiting, name), new List<CardModel>(), false);
 	}
 
-	private void Render(List<Section> sections)
+	/// <summary>A reward that neither belongs to the local player nor is chosen by them.</summary>
+	private static Section? DescribeOther(RedirectedReward redirected)
 	{
-		foreach (Node child in _sections.GetChildren())
+		string chooser = Redirects.NameOf(redirected.Chooser);
+		string recipient = Redirects.NameOf(redirected.Recipient);
+		if (redirected.IsBeingChosen)
 		{
-			_sections.RemoveChild(child);
+			// "Hide from Y" only hides the cards from Y, so everyone else still sees them.
+			return new Section(ModStrings.Format(ModStrings.PreviewOtherChoosing, chooser, recipient), redirected.Reward.Cards.ToList(), false);
+		}
+		if (redirected.Picked.Count > 0)
+		{
+			return null;
+		}
+		return new Section(ModStrings.Format(redirected.Skipped ? ModStrings.PreviewOtherSkipped : ModStrings.PreviewOtherWaiting, chooser, recipient), new List<CardModel>(), false);
+	}
+
+	private static void Clear(Container container)
+	{
+		foreach (Node child in container.GetChildren())
+		{
+			container.RemoveChild(child);
 			child.QueueFree();
+		}
+	}
+
+	private static Vector2 CardRowSize(int count, float scale)
+	{
+		return new Vector2(count * NCard.defaultSize.X * scale + (count - 1) * CardGap, NCard.defaultSize.Y * scale);
+	}
+
+	/// <summary>The scale at which a row of cards is exactly <paramref name="width"/> wide.</summary>
+	private static float ScaleToFit(int count, float width)
+	{
+		return (width - (count - 1) * CardGap) / count / NCard.defaultSize.X;
+	}
+
+	private static Control MakeSection(Section entry, int fontSize, float width, float scale)
+	{
+		VBoxContainer section = new VBoxContainer
+		{
+			MouseFilter = Control.MouseFilterEnum.Ignore
+		};
+		section.AddThemeConstantOverride("separation", (int)LabelGap);
+		Label label = ModUi.MakeLabel(entry.Text, fontSize);
+		label.CustomMinimumSize = new Vector2(width, 0f);
+		section.AddChild(label);
+		if (entry.Cards.Count > 0)
+		{
+			section.AddChild(entry.Hidden ? MakeHiddenRow(CardRowSize(entry.Cards.Count, scale)) : MakeCardRow(entry.Cards, scale));
+		}
+		return section;
+	}
+
+	/// <summary>Fills in the local player's panel. Returns the height it takes up.</summary>
+	private float Render(List<Section> sections)
+	{
+		Clear(_sections);
+		_panel.Visible = sections.Count > 0;
+		if (sections.Count == 0)
+		{
+			return 0f;
 		}
 		// Cards sit in one row, as large as fits beside the banner (up to MaxCardScale).
 		float rowWidth = AvailableWidth - 2f * PanelPadding;
+		List<float> scales = sections.Select((Section s) => s.Cards.Count == 0 ? 0f : Mathf.Clamp(ScaleToFit(s.Cards.Count, rowWidth), 0.15f, MaxCardScale)).ToList();
 		float width = MinWidth;
-		foreach (Section entry in sections)
+		for (int i = 0; i < sections.Count; i++)
 		{
-			VBoxContainer section = new VBoxContainer
+			width = Mathf.Max(width, CardRowSize(sections[i].Cards.Count, scales[i]).X);
+		}
+		width = Mathf.Min(width, rowWidth);
+		float height = 2f * PanelPadding + (sections.Count - 1) * SectionGap;
+		for (int i = 0; i < sections.Count; i++)
+		{
+			_sections.AddChild(MakeSection(sections[i], LabelFontSize, width, scales[i]));
+			height += ModUi.MeasureText(sections[i].Text, LabelFontSize, width).Y;
+			if (sections[i].Cards.Count > 0)
 			{
-				MouseFilter = Control.MouseFilterEnum.Ignore
-			};
-			section.AddThemeConstantOverride("separation", 8);
-			Label label = ModUi.MakeLabel(entry.Text, 22);
-			section.AddChild(label);
-			int count = entry.Cards.Count;
-			if (count > 0)
-			{
-				float scale = Mathf.Clamp((rowWidth - (count - 1) * CardGap) / count / NCard.defaultSize.X, 0.15f, MaxCardScale);
-				Vector2 rowSize = new Vector2(count * NCard.defaultSize.X * scale + (count - 1) * CardGap, NCard.defaultSize.Y * scale);
-				section.AddChild(entry.Hidden ? MakeHiddenRow(rowSize) : MakeCardRow(entry.Cards, scale));
-				width = Mathf.Max(width, rowSize.X);
+				height += LabelGap + CardRowSize(sections[i].Cards.Count, scales[i]).Y;
 			}
-			_sections.AddChild(section);
 		}
-		foreach (Label label in _sections.GetChildren().SelectMany((Node s) => s.GetChildren().OfType<Label>()))
+		return height;
+	}
+
+	/// <summary>
+	/// Fills in the other players' panel: a grid with however many columns allow the largest cards
+	/// within the given space.
+	/// </summary>
+	private void RenderOthers(List<Section> sections, float maxWidth, float maxHeight)
+	{
+		Clear(_othersGrid);
+		_othersPanel.Visible = false;
+		int bestColumns = 0;
+		float bestScale = 0f;
+		float bestHeight = float.MaxValue;
+		for (int columns = 1; columns <= sections.Count; columns++)
 		{
-			label.CustomMinimumSize = new Vector2(Mathf.Min(width, rowWidth), 0f);
+			float columnWidth = OthersColumnWidth(maxWidth, columns);
+			if (columnWidth <= 0f)
+			{
+				break;
+			}
+			// What's left of the height, after labels and gaps, is shared by the rows that have cards.
+			float fixedHeight = 2f * PanelPadding - SectionGap;
+			int cardRows = 0;
+			float scale = OthersMaxCardScale;
+			foreach (Section[] row in sections.Chunk(columns))
+			{
+				fixedHeight += SectionGap + row.Max((Section s) => ModUi.MeasureText(s.Text, OthersLabelFontSize, columnWidth).Y);
+				if (row.Any((Section s) => s.Cards.Count > 0))
+				{
+					fixedHeight += LabelGap;
+					cardRows++;
+				}
+			}
+			foreach (Section section in sections.Where((Section s) => s.Cards.Count > 0))
+			{
+				scale = Mathf.Min(scale, ScaleToFit(section.Cards.Count, columnWidth));
+			}
+			if (cardRows > 0)
+			{
+				scale = Mathf.Min(scale, (maxHeight - fixedHeight) / cardRows / NCard.defaultSize.Y);
+			}
+			float height = fixedHeight + cardRows * NCard.defaultSize.Y * scale;
+			// Without any cards there's no scale to compare; fewest columns wins unless it's too tall.
+			bool better = scale > bestScale || (scale == bestScale && bestHeight > maxHeight && height < bestHeight);
+			if (better)
+			{
+				bestColumns = columns;
+				bestScale = scale;
+				bestHeight = height;
+			}
 		}
-		// Shrink back to the new content, still pinned to the corner.
-		float top = Top;
-		_panel.OffsetLeft = -RightMargin;
-		_panel.OffsetRight = -RightMargin;
-		_panel.OffsetTop = top;
-		_panel.OffsetBottom = top;
+		if (bestColumns == 0 || bestScale < OthersMinCardScale || bestHeight > maxHeight + 1f)
+		{
+			return;
+		}
+		float maxColumnWidth = OthersColumnWidth(maxWidth, bestColumns);
+		_othersPanel.Visible = true;
+		_othersGrid.Columns = bestColumns;
+		foreach (Section section in sections)
+		{
+			// Just wide enough for the cards and the text, so the text only wraps when it has to.
+			float width = Mathf.Max(ModUi.MeasureText(section.Text, OthersLabelFontSize).X + 4f, section.Cards.Count > 0 ? CardRowSize(section.Cards.Count, bestScale).X : 0f);
+			_othersGrid.AddChild(MakeSection(section, OthersLabelFontSize, Mathf.Min(width, maxColumnWidth), bestScale));
+		}
+	}
+
+	private static float OthersColumnWidth(float panelWidth, int columns)
+	{
+		return (panelWidth - 2f * PanelPadding - (columns - 1) * SectionGap) / columns;
 	}
 
 	private static Control MakeCardRow(List<CardModel> cards, float scale)
