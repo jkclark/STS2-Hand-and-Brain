@@ -17,7 +17,8 @@ With players A, B and C in that order: A picks B's cards, B picks C's, and C pic
 - **Their deck.** Press **R** anywhere in the run to open the deck of the player you pick for, and
   again to close it. The key can be changed in the game's input settings ("Hand and Brain: View
   Deck You Pick For", the last row). The card reward screen also has a **"Y's Deck"** button
-  (draw-pile hotkey).
+  (draw-pile hotkey). Their relics are shown across the top in place of yours while their deck is
+  open; hover one for its tooltip or click to inspect it.
 - **Who picks for whom.** Hover a player in the player list on the left to see it: a gold arrow
   runs from them to the player they pick for, a cream arrow from the player who picks for them,
   and a tooltip spells it out.
@@ -97,6 +98,7 @@ reward screen, and it broadcasts the choice. The mod hooks that flow with Harmon
 | `CardReward.Description`, `NCardRewardSelectionScreen.RefreshOptions` | "Choose a card for Y" text, the "Y's Deck" button and the "Hide from Y" toggle. |
 | `NRewardsScreen._Ready` | Adds the preview panels. |
 | `NMultiplayerPlayerState.UpdateHighlightedState` | Shows the chooser → recipient arrows and tooltip while a player row is hovered. |
+| `NDeckViewScreen._Ready`, `AfterCapstoneClosed` | Swaps in the other player's relics while their deck is open. |
 | `NHotkeyManager._UnhandledInput` | The hotkey that toggles the recipient's deck view. |
 | `NInputManager` defaults / save / reset, `NInputSettingsEntry._Ready` | Adds the hotkey to the game's keybinding menu. Its binding is kept in the mod's own file. |
 | `ModManager.GetGameplayRelevantModNameList` | Adds a build fingerprint to the mod version peers compare when connecting. |
@@ -118,6 +120,7 @@ Source layout:
 - `src/Patches/TestingPatches.cs`: the `--hab-enemies-1hp` testing flag
 - `src/UI/LobbyPanel.cs`: the lobby settings panel
 - `src/UI/PickPreview.cs`: the preview panels and pick/skip notifications
+- `src/UI/DeckRelics.cs`: the relics above another player's deck
 - `src/UI/PickerArrows.cs`: the hover arrows and tooltip beside the player list
 
 Built and verified against game version **v0.113.1**. Patches that reach into private game code

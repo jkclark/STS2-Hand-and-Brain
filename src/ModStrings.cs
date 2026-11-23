@@ -24,6 +24,8 @@ public static class ModStrings
 
 	public const string ViewDeck = "HAND_AND_BRAIN.VIEW_DECK";
 
+	public const string DeckRelics = "HAND_AND_BRAIN.DECK_RELICS";
+
 	public const string HideCards = "HAND_AND_BRAIN.HIDE_CARDS";
 
 	public const string ShowCards = "HAND_AND_BRAIN.SHOW_CARDS";
@@ -61,6 +63,7 @@ public static class ModStrings
 		[RewardDescription] = "Choose a card for {Player}",
 		[ChooseCardHeader] = "Choose a Card for {Player}",
 		[ViewDeck] = "{Player}'s Deck",
+		[DeckRelics] = "{Player}'s relics:",
 		[HideCards] = "Hide from {Player}",
 		[ShowCards] = "Show to {Player}",
 		[PreviewWaiting] = "{Player} will choose a card for you",
