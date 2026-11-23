@@ -8,7 +8,7 @@ namespace HandAndBrain.Patches;
 /// The game refuses to connect peers whose gameplay mods differ, comparing "id-version" strings.
 /// Every build of this mod would report the same manifest version, so two different builds could
 /// play together and desync. Appending a fingerprint of the compiled assembly makes the game's own
-/// handshake reject mismatched builds ("HandAndBrain-0.2.0+1a2b3c4d").
+/// handshake reject mismatched builds ("HandAndBrain-0.3.0+1a2b3c4d").
 /// </summary>
 [HarmonyPatch(typeof(ModManager), nameof(ModManager.GetGameplayRelevantModNameList))]
 public static class GameplayModListPatch

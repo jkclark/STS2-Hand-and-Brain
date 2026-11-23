@@ -4,7 +4,7 @@
     <TargetFramework>net9.0</TargetFramework>
     <AssemblyName>HandAndBrain</AssemblyName>
     <RootNamespace>HandAndBrain</RootNamespace>
-    <Version>0.2.0</Version>
+    <Version>0.3.0</Version>
     <Nullable>enable</Nullable>
     <LangVersion>latest</LangVersion>
     <ImplicitUsings>disable</ImplicitUsings>

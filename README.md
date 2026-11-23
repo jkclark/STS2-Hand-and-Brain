@@ -39,7 +39,7 @@ With players A, B and C in that order: A picks B's cards, B picks C's, and C pic
   `%APPDATA%/SlayTheSpire2/hand_and_brain/` (Godot's user data folder).
 
 Every player in the lobby needs the mod installed, and the **same build** of it: each build
-reports a fingerprint (e.g. `HandAndBrain-0.2.0+1a2b3c4d`), and the game refuses to connect
+reports a fingerprint (e.g. `HandAndBrain-0.3.0+1a2b3c4d`), and the game refuses to connect
 players whose builds differ. Matching the rest of your mod lists is also a good idea.
 
 ## Building
