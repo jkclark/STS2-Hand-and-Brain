@@ -3,7 +3,7 @@
   "name": "Hand and Brain",
   "author": "jclark",
   "description": "Multiplayer variant: after combat, another player picks the card reward for your deck.",
-  "version": "0.3.0",
+  "version": "0.3.1",
   "min_game_version": "0.113.1",
   "has_pck": false,
   "has_dll": true,
